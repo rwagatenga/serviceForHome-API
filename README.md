@@ -5,6 +5,6 @@ it is was created in Node Js, Express Js and GraphQl
 
 # Steps to follow
 
-git clone 
-cd serviceForHom-API
-npm install
+1. git clone https://github.com/rwagatenga/serviceForHome.git<br/>
+2. cd serviceForHom-API <br/>
+3. npm install <br/>
