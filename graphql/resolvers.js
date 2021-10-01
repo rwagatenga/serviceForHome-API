@@ -18,7 +18,7 @@ const Cart = require("../models/cart");
 
 const pubsub = new PubSub(); //create a PubSub instance
 
-const SOMETHING_CHANGED_TOPIC = "something_changed";
+const SOMETHING_CHANGED_SERVICE = "something_changed";
 module.exports = {
 	//This Create Service Function
 	createService: async function ({ serviceData }, req) {
@@ -48,12 +48,25 @@ module.exports = {
 			status: 0,
 		});
 		const services = await service.save(); //It needs some Socket.IO
+		pubsub.publish('services', {
+			service:{
+				mutation: 'SERVICE_CREATED',
+				serviceData: {...services}
+			}
+		}); 
 		return {
 			...services._doc,
 			_id: services._id.toString(),
 			createdAt: services.createdAt.toISOString(),
 			updatedAt: service.updatedAt.toISOString(),
 		};
+	},
+
+	// This is Subscription
+	Subscription: {
+		serviceAdded: {  // create a channelAdded subscription resolver function.
+		subscribe: () => pubsub.asyncIterator(SOMETHING_CHANGED_SERVICE)  // subscribe to changes in a topic
+		}
 	},
 
 	//This is Viewing all Services Function
