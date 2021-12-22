@@ -1,11 +1,16 @@
 const express = require('express');
+const dotenv = require('dotenv');
 const { GraphQLServer, PubSub } = require("graphql-yoga");
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const typeDefs = require("./graphql/typeDefs");
 const resolvers = require("./graphql/resolvers");
 
-const MongoDb_uri = "mongodb+srv://node:hOdvywNk7xZg8uCK@nodejs.cs7gj.mongodb.net/services?retryWrites=true&w=majority";
+dotenv.config({
+	path: ".env",
+});
+
+const MongoDb_uri = process.env.MONGO_URL;
 
 const pubsub = new PubSub();
 
@@ -43,7 +48,6 @@ const server = new GraphQLServer({
 		return { message: message, status: code, data: data };
 	}
 });
-
 app.use((error, req, res, next) => {
 	console.log(error);
 	const status = error.statusCode || 500;
@@ -51,6 +55,7 @@ app.use((error, req, res, next) => {
 	const data = error.data;
 	res.status(status).json({ message: message });
 });
+
 
 mongoose.connect(MongoDb_uri, {
 	useUnifiedTopology: true,
