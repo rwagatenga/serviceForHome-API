@@ -43,7 +43,6 @@ const server = new GraphQLServer({
 		return { message: message, status: code, data: data };
 	}
 });
-
 app.use((error, req, res, next) => {
 	console.log(error);
 	const status = error.statusCode || 500;
@@ -51,6 +50,7 @@ app.use((error, req, res, next) => {
 	const data = error.data;
 	res.status(status).json({ message: message });
 });
+
 
 mongoose.connect(MongoDb_uri, {
 	useUnifiedTopology: true,
