@@ -15,7 +15,7 @@ const MongoDb_uri = process.env.MONGO_URL;
 const pubsub = new PubSub();
 
 const options = {
-	port: 8080
+	port: process.env.PORT
 };
 const app = express();
 
