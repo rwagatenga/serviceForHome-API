@@ -1,11 +1,16 @@
 const express = require('express');
+const dotenv = require('dotenv');
 const { GraphQLServer, PubSub } = require("graphql-yoga");
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const typeDefs = require("./graphql/typeDefs");
 const resolvers = require("./graphql/resolvers");
 
-const MongoDb_uri = "mongodb+srv://node:hOdvywNk7xZg8uCK@nodejs.cs7gj.mongodb.net/services?retryWrites=true&w=majority";
+dotenv.config({
+	path: ".env",
+});
+
+const MongoDb_uri = process.env.MONGO_URL;
 
 const pubsub = new PubSub();
 
