@@ -194,8 +194,18 @@ module.exports = buildSchema(`
 
 	}
 
+	type Subscription {
+		services: ServiceSubscriptionPayload!
+	}
+	
+	type ServiceSubscriptionPayload {
+		mutation: String!
+		serviceData: Service!
+	}
+
 	schema {
 		query: RootQuery
 		mutation: RootMutation
+		subscription: Subscription
 	}
 `);
