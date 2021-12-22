@@ -1,4 +1,4 @@
-const { buildSchema } = require('graphql');
+const { buildSchema } = require("graphql");
 
 module.exports = buildSchema(`
 	type Service {
@@ -104,6 +104,7 @@ module.exports = buildSchema(`
 		priceTag: String
 		negotiate: String
 		status: Int
+		currentPassword: String
 	}
 	input orderInputData {
 		serviceId: ID!
@@ -149,10 +150,10 @@ module.exports = buildSchema(`
 	type AuthData {
         token: String!
         userId: String!
-        firstName: String
-        lastName: String
-        userType: String
+        userType: String!
         expiresIn: Int
+		user: User!
+        users: [User!]!
     }
 
 	type RootQuery {
@@ -175,7 +176,7 @@ module.exports = buildSchema(`
         deleteSubService(id: ID!): Boolean
 
         createUser(token: String, expiresIn: Int, serviceId: ID, subServiceId: [ID], userInput: userInputData): User!
-        updateUser(id: ID!, serviceId: ID, subServiceId: [ID], userInput: userInputData): User!
+        updateUser(userId: ID!, serviceId: ID, subServiceId: [ID], userInput: userInputData): User!
 
         createCart(clientId: ID! cartInputs: cartInputData): Cart!
         updateCart(cartId: ID! cartInputs: cartInputData): Cart!
