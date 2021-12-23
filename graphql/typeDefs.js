@@ -2,7 +2,7 @@
 
 const typeDefs = `
 	type Query{
-		login(email: String!, password: String!): AuthData!
+		login(email: String!, password: String!, location: LocationInput!): AuthData!
 		viewServices: servicesData!
 		viewSubServices: subServicesData!
 		viewOrders(userId: ID!, yourId: ID): ordersData!
@@ -56,8 +56,10 @@ const typeDefs = `
 		province: String
 		district: String
 		sector: String
-		latitude: String
-		longitude: String
+	}
+	type Locations {
+		latitude: Float!
+		longitude: Float!
 	}
 	type User {
 		_id: ID!
@@ -70,6 +72,7 @@ const typeDefs = `
 		userType: String!
 		profile: String
 		address: Addresses!
+		location: Locations!
 		serviceId: [Service]
 		subServiceId: [SubService]
 		priceTag: String
@@ -130,6 +133,10 @@ const typeDefs = `
 		district: String!
 		sector: String!
 	}
+	input LocationInput {
+		latitude: Float!
+		longitude: Float!
+	}
 	input userInputData {
 		firstName: String!
 		lastName: String!
@@ -139,6 +146,7 @@ const typeDefs = `
 		password: String!
 		userType: String!
 		address: Address!
+		location: LocationInput!
 		priceTag: String
 		negotiate: String
 		status: Int
@@ -167,6 +175,7 @@ const typeDefs = `
 		price: String!
 		duration: String!
 	}
+	
 	type servicesData {
 		services: [Service!]!
 	}

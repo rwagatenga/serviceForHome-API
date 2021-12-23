@@ -39,6 +39,10 @@ const userSchema = new Schema({
     type: Object,
     required: true
   },
+  location: {
+    type: Object,
+    required: true
+  },
   serviceId: [
     { 
       type: Schema.Types.ObjectId,

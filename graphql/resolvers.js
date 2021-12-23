@@ -21,6 +21,7 @@ const resolvers = {
 	Query: {
 		/** Function of Login Functionality */
 		login: async function (args, req) {
+			console.log("REQ", req)
 			const email = req.email;
 			const password = req.password;
 			const user = await User.findOne({ email: email });
@@ -43,6 +44,11 @@ const resolvers = {
 				"somesupersecretsecrets",
 				{ expiresIn: "1h" }
 			);
+			user.location = {
+				latitude: req.location.latitude,
+				longitude: req.location.longitude,
+			};
+			await user.save();
 			const users = await User.find({ email: email })
 				.populate({
 					path: "serviceId",
@@ -57,7 +63,6 @@ const resolvers = {
 				userId: user._id.toString(),
 				userType: user.userType,
 				expiresIn: 3600,
-				// user: user,
 				users: users.map((item) => {
 					return {
 						...item._doc,
@@ -708,6 +713,10 @@ const resolvers = {
 						district: userInput.address.district,
 						sector: userInput.address.sector,
 					},
+					location: {
+						latitude: userInput.location.latitude,
+						longitude: userInput.location.longitude
+					}
 				});
 				const createdUser = await user.save();
 				token = jwt.sign(
@@ -788,6 +797,10 @@ const resolvers = {
 						province: userInput.address.province,
 						district: userInput.address.district,
 						sector: userInput.address.sector,
+					},
+					location: {
+						latitude: userInput.location.latitude,
+						longitude: userInput.location.longitude
 					},
 					serviceId: service,
 					subServiceId: subService,
@@ -875,6 +888,10 @@ const resolvers = {
 					district: userInput.address.district,
 					sector: userInput.address.sector,
 				};
+				user.location = {
+					latitude: userInput.location.latitude,
+					longitude: userInput.location.longitude
+				}
 
 				const updatedUser = await user.save(); //It needs some Socket.IO
 				userPush = {
@@ -912,6 +929,10 @@ const resolvers = {
 					district: userInput.district,
 					sector: userInput.sector,
 				};
+				user.location = {
+					latitude: userInput.location.latitude,
+					longitude: userInput.location.longitude
+				}
 				user.serviceId = service;
 				user.subServiceId = subService;
 				user.priceTag = userInput.priceTag;
