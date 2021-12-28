@@ -8,3 +8,5 @@ it is was created in Node Js, Express Js and GraphQl
 1. git clone https://github.com/rwagatenga/serviceForHome.git<br/>
 2. cd serviceForHom-API <br/>
 3. npm install <br/>
+4. cp .env.example .env
+5. Insert your mongodb url
