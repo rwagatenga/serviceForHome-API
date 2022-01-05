@@ -10,8 +10,12 @@ const typeDefs = `
 		viewOfferBids(clientId: ID!, offerId: ID!): offerBids!
 		workerBids(workerId: ID!): offerBids!
 		getCart(clientId: ID!): Cart!
+		viewUsers: usersData!
+		checkPayment(transactionId: String): Connection!
+		viewDashboard: Dashboard!
 	}
 	type Mutation{
+		payingFee(payment: PayConnections): Connection!
 		createService(serviceData: insertService): Service!
 		updateService(id: ID!, serviceInput: insertService): Service!
         deleteService(id: ID!): Boolean
@@ -37,6 +41,11 @@ const typeDefs = `
         updatedBid(workerId: ID!, bidId: ID!, bidInput: bidInputData): Bid!
         deleteBid(workerId: ID!, bidId: ID!): Boolean
 	}
+	type Dashboard {
+		clients: String
+		workers: String
+		orders: String
+	}
 	type Service {
 		_id: ID!
 		serviceName: String!
@@ -61,6 +70,26 @@ const typeDefs = `
 		latitude: Float!
 		longitude: Float!
 	}
+	type GeoLocation {
+		type: String
+		coordinates: [Float!]
+	}
+	type Connection {
+		amount: String
+		telephoneNumber: String
+		transactionId: String
+		status: String
+		statusCode: String
+		statusDescription: String
+		paidAmount: String
+		responseTimeStamp: String
+		callbackUrl: String
+		description: String
+		code: String
+		userId: ID
+		paymentStatus: Boolean
+		transactionStatus: Boolean
+	}
 	type User {
 		_id: ID!
 		firstName: String!
@@ -73,8 +102,11 @@ const typeDefs = `
 		profile: String
 		address: Addresses!
 		location: Locations!
+		loc: GeoLocation!
+		connections: Connection
 		serviceId: [Service]
 		subServiceId: [SubService]
+		distance: Distance
 		priceTag: String
 		negotiate: String
 		status: Int
@@ -101,6 +133,7 @@ const typeDefs = `
 		description: String
 		price: String
 		duration: String
+		distance: Distance
 		status: Int
 		createdAt: String
 		updatedAt: String
@@ -137,6 +170,24 @@ const typeDefs = `
 		latitude: Float!
 		longitude: Float!
 	}
+	input GeoLocationInput {
+		type: String!
+		coordinates: [Float!]
+	}
+	input PayConnections {
+		amount: String
+		telephoneNumber: String
+		transactionId: String
+		status: String
+		statusCode: String
+		statusDescription: String
+		paidAmount: String
+		responseTimeStamp: String
+		callbackUrl: String
+		description: String
+		organizationId: String
+		userId: ID
+	}
 	input userInputData {
 		firstName: String!
 		lastName: String!
@@ -147,6 +198,8 @@ const typeDefs = `
 		userType: String!
 		address: Address!
 		location: LocationInput!
+		loc: GeoLocationInput!
+		connections: PayConnections
 		priceTag: String
 		negotiate: String
 		status: Int
@@ -175,7 +228,13 @@ const typeDefs = `
 		price: String!
 		duration: String!
 	}
-	
+	type Distance {
+		distance: Float
+	}
+	type usersData {
+		dist: [Distance]
+		users: [User!]!
+	}
 	type servicesData {
 		services: [Service!]!
 	}
@@ -193,6 +252,7 @@ const typeDefs = `
 	type offerBids {
 		offerBid: [Bid]!
 		totalBids: Int
+		distance: Distance
 	}
 	type AuthData {
         token: String!

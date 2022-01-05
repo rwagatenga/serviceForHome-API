@@ -1,7 +1,9 @@
+const dotenv = require("dotenv")
 const bcrypt = require("bcryptjs");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const axios = require("axios");
 
 const Province = require("../models/province");
 const District = require("../models/district");
@@ -14,14 +16,147 @@ const User = require("../models/user");
 const Order = require("../models/order");
 const Bid = require("../models/bid");
 const Cart = require("../models/cart");
+const user = require("../models/user");
+dotenv.config({
+	path: ".env",
+});
 
 //Resolvers - This are the set of the function defined to get the desired output for the given API
 const resolvers = {
 	/** Query Part */
 	Query: {
+		/** Function for viewing Users */
+		viewUsers: async function (args, req) {
+			// const users = await Service.find({
+			// 	loc: {
+			// 		$nearSphere: {
+			// 			$geometry: {
+			// 				type : "Point",
+			// 				coordinates : [ -1.9529728, 30.0941312 ]
+			// 			},
+			// 			$minDistance: 0,
+			// 			$maxDistance: 50
+			// 		}
+			// 	}
+			// })
+			 const users = await User.aggregate([
+					{
+						$geoNear: {
+							near: {
+								type: "Point",
+								coordinates: [-1, 30],
+							},
+							key: "loc",
+							distanceField: "distance",
+							distanceMultiplier: 1 / 1000,
+							query: { userType: "Worker" },
+						},
+					},
+					{ $limit: 5 },
+				]);
+			// const coords = [
+			// 	[-1.9529728, 30.0941312],
+			// 	[-1.9327728, 30.0986312]
+			// ]
+			// console.log(coords.map((item, index) => item[index]))
+			// const users = await User.find({
+			// 	loc: {
+			// 		$near: {
+			// 			$geometry: {
+			// 				type: "Polygon",
+			// 				coordinates: coords.map(item => item),
+			// 			},
+			// 			$maxDistance: 100000,
+			// 		},
+			// 	},
+			// });
+			// const users = await User.find({
+			// 	loc: {
+			// 		$geoNear(
+			// 		{
+			// 			type: "Point",
+			// 			coordinates: [-1.9529728, 30.0941312],
+			// 		},
+			// 		{ maxDistance: 5, spherical: true }
+			// 		)
+			// 	}
+			// })
+			/*const users = await User.find({
+				loc: {
+					$near: {
+						$geometry: {
+							type: "Point",
+							coordinates: [-1.9529728, 30.0941312],
+						},
+						$maxDistance: 5000,
+					},
+				},
+			});*/
+			console.log("USER", users)
+			// const user = await axios.get(process.env.FIREBASE)
+			// let payment = [];
+			// Object.keys(user.data).forEach((key) => {
+			// 	payment.push(user.data[key])
+			// });
+			// console.log("DATA", payment)
+			// const transactionId = Math.floor(Math.random() * 100);
+			// const payment = {
+			// 	telephoneNumber: "250781448238",
+			// 	amount: 100.0,
+			// 	organizationId: "25511728-20d4-4346-86a4-12e8a71e6f8d",
+			// 	description: "Payment for Ordering services",
+			// 	callbackUrl: process.env.FIREBASE,
+			// 	transactionId: transactionId,
+			// };
+			// const user = await axios.post(process.env.OPAY, payment);
+			// console.log("USER", user.data);
+			// return {
+			// 	users: users.map((user) => {
+			// 		return {
+			// 			...user._doc,
+			// 			_id: user._id.toString(),
+			// 			createdAt: user.createdAt.toISOString(),
+			// 			updatedAt: user.updatedAt.toISOString(),
+			// 		};
+			// 	}),
+			// };
+			return {
+				dist: users,
+				users: users
+			}
+				
+		},
+		/** View Dashboard */
+		viewDashboard: async function (args, req) {
+			const clients = await User.find({ userType: "Client" }).countDocuments()
+			const workers = await User.find({
+				userType: "Worker"
+			}).countDocuments();
+			const orders = await Order.find().countDocuments()
+			const dashboard = {
+				clients: clients,
+				workers: workers,
+				orders: orders
+			}
+			return dashboard
+		},
+		/** check payment */
+		checkPayment: async function (args, req) {
+			const transactionId = req.transactionId;
+			const result = await axios.get(process.env.FIREBASE);
+			let payment = [];
+			Object.keys(result.data).forEach((key) => {
+				payment.push(result.data[key])
+			});
+			const paymentExist = payment.find(pay => pay.transactionId === transactionId)
+			return {
+				paymentStatus: paymentExist === undefined ? false : true,
+				transactionStatus: paymentExist === undefined ? false : paymentExist.status === "SUCCESS" ? true : false
+			}
+		},
+
 		/** Function of Login Functionality */
 		login: async function (args, req) {
-			console.log("REQ", req)
 			const email = req.email;
 			const password = req.password;
 			const user = await User.findOne({ email: email });
@@ -76,7 +211,11 @@ const resolvers = {
 
 		/** This is Viewing all Services Function */
 		viewServices: async function (args, req) {
-			const services = await Service.find()
+			const users = await User.find().select('serviceId');
+			const data = users.find((item) => item.serviceId.length > 0);
+			const services = await Service.find({
+				_id: { $in: data.serviceId },
+			})
 				.sort({ createdAt: -1 })
 				.populate("subServiceId");
 			return {
@@ -258,6 +397,30 @@ const resolvers = {
 		},
 		/** view bids on your offer */
 		viewOfferBids: async function (args, { clientId, offerId }, req) {
+			const coords = await User.findOne({ _id: clientId })
+			// const options = {
+			// 	loc: {
+			// 		$geoWithin: {
+			// 			$centerSphere: [coords.loc.coordinates, 15 / 3963.2],
+			// 		},
+			// 	},
+			// };
+			const users = await User.aggregate([
+				{
+					$geoNear: {
+						near: {
+							type: "Point",
+							coordinates: coords.loc.coordinates,
+						},
+						key: "loc",
+						distanceField: "distance",
+						distanceMultiplier: 1 / 1000,
+						query: { userType: "Worker" },
+					},
+				},
+				{ $limit: 5 },
+			]);
+			console.log("NEAREST USERS", users)
 			const user = await Order.find({
 				$and: [{ clientId: clientId }, { _id: offerId }],
 			});
@@ -267,7 +430,11 @@ const resolvers = {
 				throw error;
 			}
 			//const orderId = await Bid.findOne({ orderId: offerId })
-			const offerBid = await Bid.find({ orderId: user })
+			// const offerBid = await Bid.find({ orderId: user })
+			// const offerBid = await Bid.find({
+			const offerBid = await Bid.find({
+				$and: [{ workerId: users[0]._id }, { orderId: user }, ],
+			})
 				.sort({ createdAt: -1 })
 				.populate({
 					path: "orderId",
@@ -314,6 +481,7 @@ const resolvers = {
 						createdAt: item.createdAt.toISOString(),
 						updatedAt: item.updatedAt.toISOString(),
 						duration: item.duration.toISOString(),
+						dist: users
 					};
 				}),
 				totalBids: totalBids,
@@ -359,7 +527,6 @@ const resolvers = {
 			{ pubsub },
 			req
 		) {
-			console.log("SERVICE", serviceData.serviceName);
 			const errors = [];
 
 			if (
@@ -459,7 +626,6 @@ const resolvers = {
 
 		/** Delete a Service Function */
 		deleteService: async function (parent, { id }, { pubsub }, req) {
-			console.log("ID", id);
 			const service = await Service.findById(id);
 			if (!service) {
 				const error = new Error("That Service not Found!");
@@ -713,10 +879,8 @@ const resolvers = {
 						district: userInput.address.district,
 						sector: userInput.address.sector,
 					},
-					location: {
-						latitude: userInput.location.latitude,
-						longitude: userInput.location.longitude
-					}
+					location: userInput.location,
+					loc: userInput.loc,
 				});
 				const createdUser = await user.save();
 				token = jwt.sign(
@@ -798,15 +962,17 @@ const resolvers = {
 						district: userInput.address.district,
 						sector: userInput.address.sector,
 					},
-					location: {
-						latitude: userInput.location.latitude,
-						longitude: userInput.location.longitude
+					location: userInput.location,
+					loc: {
+						type: userInput.loc.type,
+						coordinates: userInput.loc.coordinates,
 					},
 					serviceId: service,
 					subServiceId: subService,
 					priceTag: userInput.priceTag,
 					negotiate: userInput.negotiate,
 					status: 1,
+					connection: [],
 				});
 				const createdUsers = await user.save();
 				const createdUser = await User.findOne({
@@ -855,7 +1021,6 @@ const resolvers = {
 			{ pubsub },
 			req
 		) {
-			console.log("USER", userInput);
 			const user = await User.findOne({ _id: userId });
 			if (!user) {
 				const error = new Error("User not found.");
@@ -890,8 +1055,8 @@ const resolvers = {
 				};
 				user.location = {
 					latitude: userInput.location.latitude,
-					longitude: userInput.location.longitude
-				}
+					longitude: userInput.location.longitude,
+				};
 
 				const updatedUser = await user.save(); //It needs some Socket.IO
 				userPush = {
@@ -931,8 +1096,8 @@ const resolvers = {
 				};
 				user.location = {
 					latitude: userInput.location.latitude,
-					longitude: userInput.location.longitude
-				}
+					longitude: userInput.location.longitude,
+				};
 				user.serviceId = service;
 				user.subServiceId = subService;
 				user.priceTag = userInput.priceTag;
@@ -1164,9 +1329,10 @@ const resolvers = {
 		},
 
 		/** Delete Cart */
-		deleteCart: async function (parent,
+		deleteCart: async function (
+			parent,
 			{ clientId, cartId, serviceId, subServiceId },
-			{pubsub},
+			{ pubsub },
 			req
 		) {
 			const user = await User.findOne({ _id: clientId });
@@ -1648,7 +1814,12 @@ const resolvers = {
 		},
 
 		/** Delete Bid */
-		deleteBid: async function (parent, { workerId, bidId }, {pubsub}, req) {
+		deleteBid: async function (
+			parent,
+			{ workerId, bidId },
+			{ pubsub },
+			req
+		) {
 			const bid = await Bid.findOne({ _id: bidId });
 			if (!bid) {
 				const error = new Error("Unable to Found That Bid.");
@@ -1683,6 +1854,14 @@ const resolvers = {
 				throw error;
 			}
 		},
+		/** Paying any fee Function */
+		payingFee: async function (args, { payment }, { pubsub }, req) {
+			const paying = await axios.post(process.env.OPAY, payment);
+			console.log("PAYING", paying)
+			return {
+				...paying.data
+			}
+		}
 	},
 
 	/** Subscription Part */

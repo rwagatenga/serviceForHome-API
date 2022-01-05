@@ -52,7 +52,10 @@ const orderSchema = new Schema({
       },
       status: {
         type: Number
-      }
+      },
+      payment: [
+        {type: Object}
+      ]
     }
   ]
 },
